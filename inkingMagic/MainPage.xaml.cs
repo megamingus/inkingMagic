@@ -80,7 +80,7 @@ namespace inkingMagic
 
                 var vector2 = new Vector() { Start = points[i - 1], End = points[i] };
 
-                if (Math.Abs(vector1.Angle(vector2)) > 15)
+                if (Math.Abs(vector1.Angle(vector2)) > 25)
                 {
 
                     System.Diagnostics.Debug.WriteLine("angle " + Math.Abs(vector1.Angle(vector2)));
@@ -95,7 +95,7 @@ namespace inkingMagic
                 }
             }
 
-            vectors = vectors.Where(v => v.Long > 5).ToList();
+            vectors = vectors.Where(v => v.Long > 50).ToList();
             System.Diagnostics.Debug.WriteLine("added {0}  - skiped {1}", added, skiped);
             System.Diagnostics.Debug.WriteLine("Cantidad de vectores detectados: {0}", vectors.Count);
 
@@ -110,8 +110,8 @@ namespace inkingMagic
             dp.Add(dp.First());
             var vecs = dp.Zip(dp.Skip(1), (a, b) => new Vector() { Start = a, End = b }).ToList();
 
-            if (shape.IsClosed || shape.Vectors.Count < 2)
-                vecs.ForEach(v =>
+           // if (shape.IsClosed || shape.Vectors.Count < 2)
+                vectors.ForEach(v =>
                 {
                     var line = new Line();
 
@@ -217,7 +217,7 @@ namespace inkingMagic
 
         private List<Vector> MergeSimilarVectors(int ExpectedSides)
         {
-            var p = new Dictionary<string, float>() { { "Nothing",0 }, { "Square",4 }, { "Triangle", 3 }, { "Line", 1 }, { "Circle", 0 } };
+            var p = new Dictionary<string, float>() { { "Nothing", 0 }, { "Square", 4 }, { "Triangle", 3 }, { "Line", 1 }, { "Circle", 0 } };
 
             var vectors = this.Vectors.ToList();
             return vectors;
@@ -278,7 +278,7 @@ namespace inkingMagic
             var wides = angles.Where(a => 160 < a || a < 20).ToList();
             int difference = angles.Count - wides.Count;
 
-            if (difference == 0)
+            if (difference < 4)
 
                 score += 100;
 
@@ -291,16 +291,16 @@ namespace inkingMagic
                 return 0;
 
             var score = 0;
-            var angles = Angles.Select(a => Math.Abs(a) % 180).ToList();
-            var acutes = angles.Where(a => 20 < a && a < 45).ToList();
+            var angles = Angles.Select(a => Math.Abs(a) % 180).Take(Angles.Count - 1).ToList();
+            var acutes = angles.Where(a => 25 < a && a < 45).ToList();
             var wides = angles.Where(a => 160 < a || a < 20).ToList();
             int difference = angles.Count - wides.Count;
 
-            var positive = Angles.Where(x => x % 180 > 0).ToList().Count;
+            var positive = Angles.Where(x => x % 180 > 0).Take(Angles.Count - 1).ToList().Count;
 
             var negative = angles.Count - positive;
 
-            if (positive > 1 && negative > 1)
+            if (positive > 2 && negative > 2)
                 return 0;
 
 
