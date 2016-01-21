@@ -11,6 +11,9 @@
         <InkCanvas Name="ink" ></InkCanvas>
         <Canvas Name="canvas"  ></Canvas>
         <TextBlock Name="shapeText" Text="hola" FontSize="30" VerticalAlignment="Bottom" HorizontalAlignment="Center"/>
-        <Button VerticalAlignment="Bottom" HorizontalAlignment="Right" Click="Button_Click" >Clear</Button>
+        <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Right" Orientation="Horizontal">
+            <Button Name="RecognizeBtn" Click="OnRecognizeAsync" Margin="10">Recognize</Button>
+            <Button Click="Button_Click" Margin="10">Clear</Button>
+        </StackPanel>
     </Grid>
 </Page>

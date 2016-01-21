@@ -15,6 +15,10 @@ using Windows.UI.Xaml.Navigation;
 using System.Linq;
 using Windows.UI.Xaml.Shapes;
 using Windows.UI;
+using Windows.UI.Input.Inking;
+using Windows.Globalization;
+using Windows.UI.Text.Core;
+using SimpleInk;
 //using System.Drawing;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
@@ -26,6 +30,12 @@ namespace inkingMagic
     /// </summary>
     public sealed partial class MainPage : Page
     {
+
+        InkRecognizerContainer inkRecognizerContainer = null;
+        private IReadOnlyList<InkRecognizer> recoView = null;
+        private Language previousInputLanguage = null;
+        private CoreTextServicesManager textServiceManager = null;
+
         public MainPage()
         {
             this.InitializeComponent();
@@ -33,12 +43,91 @@ namespace inkingMagic
             ink.InkPresenter.InputDeviceTypes = Windows.UI.Core.CoreInputDeviceTypes.Touch | Windows.UI.Core.CoreInputDeviceTypes.Pen | Windows.UI.Core.CoreInputDeviceTypes.Mouse;
             ink.InkPresenter.StrokeInput.StrokeContinued += StrokeInput_StrokeContinued;
 
-            ink.InkPresenter.StrokesCollected += InkPresenter_StrokesCollected;
+           ink.InkPresenter.StrokesCollected += InkPresenter_StrokesCollected;
 
             var vec1 = new Vector() { Start = new Point() { X = 0, Y = 0 }, End = new Point { X = 1, Y = 1 } };
             var vec2 = new Vector() { Start = new Point() { X = 0, Y = 0 }, End = new Point { X = 1, Y = 0 } };
 
             System.Diagnostics.Debug.WriteLine("Ängle =" + vec2.Angle(vec1));
+
+
+
+            inkRecognizerContainer = new InkRecognizerContainer();
+            recoView = inkRecognizerContainer.GetRecognizers();
+         
+
+            // Set the text services so we can query when language changes
+            textServiceManager = CoreTextServicesManager.GetForCurrentView();
+            textServiceManager.InputLanguageChanged += TextServiceManager_InputLanguageChanged;
+
+            SetDefaultRecognizerByCurrentInputMethodLanguageTag();
+
+
+            
+        }
+
+
+        async void OnRecognizeAsync(object sender, RoutedEventArgs e)
+        {
+            IReadOnlyList<InkStroke> currentStrokes = ink.InkPresenter.StrokeContainer.GetStrokes();
+            if (currentStrokes.Count > 0)
+            {
+                RecognizeBtn.IsEnabled = false;
+              
+                var recognitionResults = await inkRecognizerContainer.RecognizeAsync(ink.InkPresenter.StrokeContainer, InkRecognitionTarget.All);
+
+                if (recognitionResults.Count > 0)
+                {
+                    // Display recognition result
+                    string str = "";
+                    foreach (var r in recognitionResults)
+                    {
+                        str += " " + r.GetTextCandidates()[0];
+                    }
+                    shapeText.Text = str;
+                }
+                else
+                {
+                    shapeText.Text = "¯\\_(ツ)_/¯";
+                }
+
+                RecognizeBtn.IsEnabled = true;
+            }
+            else
+            {
+                shapeText.Text = "¯\\_(ツ)_/¯";
+            }
+        }
+
+
+        private void SetDefaultRecognizerByCurrentInputMethodLanguageTag()
+        {
+            // Query recognizer name based on current input method language tag (bcp47 tag)
+            Language currentInputLanguage = textServiceManager.InputLanguage;
+
+            if (currentInputLanguage != previousInputLanguage)
+            {
+                // try query with the full BCP47 name
+                string recognizerName = RecognizerHelper.LanguageTagToRecognizerName(currentInputLanguage.LanguageTag);
+
+                if (recognizerName != string.Empty)
+                {
+                    for (int index = 0; index < recoView.Count; index++)
+                    {
+                        if (recoView[index].Name == recognizerName)
+                        {
+                            inkRecognizerContainer.SetDefaultRecognizer(recoView[index]);
+                            previousInputLanguage = currentInputLanguage;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void TextServiceManager_InputLanguageChanged(CoreTextServicesManager sender, object args)
+        {
+            SetDefaultRecognizerByCurrentInputMethodLanguageTag();
         }
 
         private void InkPresenter_StrokesCollected(Windows.UI.Input.Inking.InkPresenter sender, Windows.UI.Input.Inking.InkStrokesCollectedEventArgs args)
@@ -65,8 +154,7 @@ namespace inkingMagic
 
         }
 
-
-        private void Detect(List<Point> points)
+        private async void Detect(List<Point> points)
         {
             var vectors = new List<Vector>();
             vectors.Add(new Vector() { Start = points[0], End = points[1] });
@@ -133,7 +221,12 @@ namespace inkingMagic
               System.Diagnostics.Debug.WriteLine("Vector: {0} a {1}   => {2}  Long => {3}", vector.Start, vector.End, vector.ToZero, vector.Long)
             );
 
-            shapeText.Text = shape.DetectShape();
+            var rec = shape.DetectShape();
+
+            if (rec == "Nothing")
+              OnRecognizeAsync(null, null);
+            else
+                shapeText.Text = rec;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
