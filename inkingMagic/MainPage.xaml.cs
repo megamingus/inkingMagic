@@ -84,7 +84,7 @@ namespace inkingMagic
                     {
                         str += " " + r.GetTextCandidates()[0];
                     }
-                    shapeText.Text = str;
+                   // shapeText.Text = str;
                 }
                 else
                 {
@@ -168,7 +168,7 @@ namespace inkingMagic
 
                 var vector2 = new Vector() { Start = points[i - 1], End = points[i] };
 
-                if (Math.Abs(vector1.Angle(vector2)) > 25)
+                if (Math.Abs(vector1.Angle(vector2)) > 40)
                 {
 
                     System.Diagnostics.Debug.WriteLine("angle " + Math.Abs(vector1.Angle(vector2)));
@@ -183,7 +183,7 @@ namespace inkingMagic
                 }
             }
 
-            vectors = vectors.Where(v => v.Long > 50).ToList();
+            vectors = vectors.Where(v => v.Long > 10).ToList();
             System.Diagnostics.Debug.WriteLine("added {0}  - skiped {1}", added, skiped);
             System.Diagnostics.Debug.WriteLine("Cantidad de vectores detectados: {0}", vectors.Count);
 
